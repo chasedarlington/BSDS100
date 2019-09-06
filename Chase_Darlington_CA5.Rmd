@@ -1,0 +1,131 @@
+---
+title: "Untitled"
+author: "Chase Darlington"
+date: "September 25, 2018"
+output: pdf_document
+---
+
+
+---
+title: "Unknown"
+author: "Chase Darlington"
+date: "September 25, 2018"
+output: pdf_document
+---
+
+1. (6 pts) Create the following vectors, populated with information about the courses for which you are
+enrolled this year in addition to one course (any course) that you are not enrolled.
+ - courseNum: course number of each course
+ - coursename: course name of each course
+ - courseProf: name of the instructor for each course
+ - enrolled: a logical vector indicating whether or not you are enrolled in the course
+ - anticipatedGrade: your anticipated letter grade in each course, with an NA for any course for
+   which you are not enrolled
+ - anticipatedHours: your anticipated hours spent on each class per week based on on your experience
+   so far, with an NA for any course for which you are not enrolled.
+   
+   
+```{r, echo = T}
+courseNum <- c(1,2,3,4,5,6)
+coursename <- c("MATH", "BSDS", "BLAW", "IFM", "MIS", "BIO")
+courseProf <- c("Chubb", "Popa", "Griffis", "Shahhosseini", "Rosidi", "Dickens")
+enrolled <- c(T,T,T,T,T,F)
+anticipatedGrade <- c("A", "E", "D", "B", "C", NA)
+anticipatedHours <- c(1, 2, 3, 4, 5, NA)
+```
+
+
+2. (5 pts) Create and print a data frame called MyCourseDataFrame by combining all of the above vectors.
+Assign the names of each column to be the names of the original vectors. Summarize the type of each
+column. Do the data frame variables retain their original classes? Formally test this using appropriate
+R code.
+
+```{r, echo = T}
+MyCourseDataFrame <- data.frame(courseNum, coursename, courseProf, enrolled, anticipatedGrade, anticipatedHours)
+MyCourseDataFrame
+class(MyCourseDataFrame[,1])
+class(MyCourseDataFrame[,2])
+class(MyCourseDataFrame[,3])
+class(MyCourseDataFrame[,4])
+class(MyCourseDataFrame[,5])
+class(MyCourseDataFrame[,6])
+
+```
+
+
+3. (5 pts) Combine the vectors from (1) into a list called MyCourseDataList, where each vector is an
+element of the list. Assign the names of each element to be the names of the original vectors. Do the
+elements of the list maintain their original classes? Formally test this using appropriate R code.
+
+The elements lose their original classes and turn into characters
+
+```{r, echo = T}
+MyCourseDataList <- cbind(courseNum, coursename, courseProf, enrolled, anticipatedGrade, anticipatedHours)
+MyCourseDataList
+
+col(MyCourseDataList)
+class(MyCourseDataList[,1])
+class(MyCourseDataList[,2])
+class(MyCourseDataList[,3])
+class(MyCourseDataList[,4])
+class(MyCourseDataList[,5])
+class(MyCourseDataList[,6])
+```
+
+
+4. Write code that returns the following values. As always, use ‘echo = TRUE‘ so that your code as well
+as your output is displayed after each calculation:
+  - (2 pts) The values in courseNum, excluding the fourth value
+  - (2 pts) The total number of hours you anticipate spending on coursework per week
+  - (2 pts) A data frame with only the third row and first two columns of MyCourseDataFrame
+  - (2 pts) The first value in the second element of MyCourseDataList
+
+```{r, echo = T}
+MyCourseDataList[-4,1]
+colSums(MyCourseDataFrame[6], na.rm=T, dims=1)
+MyCourseDataFrame[3, 1:2]
+MyCourseDataList[1,2]
+
+
+```
+
+
+
+5. Convert the anticipatedGrade variable in MyCourseDataFrame into an ordered factor where your
+best anticipated grade is the maximum and your lowest anticipated grade is the minimum using the 
+function factor(). Note: to get an ordering of values, you’ll have to use the argument ordered =
+TRUE. Look at the documentation of factor() to understand how to do this. Now write code to answer
+the following questions, and output the answers.
+
+(a) (2 pts) What is the maximum letter grade you anticipate receiving this semester?
+(b) (2 pts) What is the minimum number of hours you expect to work per week in a class this semester?
+Is this in this course?
+(c) (2 pts) For (a) and (b), what is the name and course number of each class? Your code should
+provide the result as a single textual output with both course number and course name separated
+by a colon, e.g. ‘BSDS100: Intro to Data Science with R‘
+
+```{r, echo=T}
+MyCourseDataFrame
+
+### (a)
+f=factor(MyCourseDataFrame$anticipatedGrade)
+levels(f) = rev(levels(f))
+MyCourseDataFrame[order(MyCourseDataFrame$anticipatedGrade, as.character(f), decreasing = FALSE), ]
+MyCourseDataFrame[1,]
+MyCourseDataFrame[1,5]
+paste(MyCourseDataFrame[1, 1], ":", MyCourseDataFrame[1,2])
+
+
+### (b)
+f=factor(MyCourseDataFrame$anticipatedHours)
+MyCourseDataFrame[order(MyCourseDataFrame$anticipatedHours, as.character(f), decreasing = FALSE), ]
+MyCourseDataFrame[1,]
+MyCourseDataFrame[1,6]
+paste(MyCourseDataFrame[1,1], ":", MyCourseDataFrame[1,2])
+
+
+
+### I'm not sure what you wanted here. I had difficulty doing this without hardcoding the coordinates. I will talk to you about this question later. ###
+
+```
+

@@ -1,0 +1,240 @@
+---
+title: "Case Study 2 - Bike Sharing"
+author: "Chase Darlington, Jack Farricker, Kibeom Kim"
+date: "October 23, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+Instructions
+
+Answer the following questions regarding the bike sharing dataset. The case study will be worth 65 points,
+and you will lose 2.5 points for each hour it is late. The case study MUST be completed in groups of 2-3
+(unless you have an SDS accomodation stating otherwise, of course).
+
+Important 10 points will be awarded based on having a clean, well-organized markdown report.
+? 5 pts, file is a knit pdf
+? 1 pts, does not print the entire data set at any point
+? 2 pts, all code is in code blocks with appropriate line breaks
+? 2 pts, all questions are answered in complete sentences outside of code blocks, and which question they
+are (e.g., quesiton 1, 2, 3. . . ) is clearly labeled
+
+
+Question 1: Set-Up (10 pts)
+(a) (1 pt) The bike sharing data set contains two documents, day, and hour, adjust the R code to read them
+into your current R session.
+```{r}
+install.packages("RCurl")
+library("RCurl")
+x <- getURL("https://raw.githubusercontent.com/abbiepopa/BSDS100/master/Data/day.csv")
+day <- read.csv(text = x)
+y <- getURL("https://raw.githubusercontent.com/abbiepopa/BSDS100/master/Data/hour.csv")
+hour <- read.csv(text = y)
+day
+hour
+```
+
+(b) (1 pt) Look at both datasets using str().
+Both hour.csv and day.csv have the following fields, except hr which is not available in day.csv
+- instant: record index
+- dteday : date
+- season : season (1:spring, 2:summer, 3:fall, 4:winter)
+- yr : year (0: 2011, 1:2012)
+- mnth : month ( 1 to 12)
+- hr : hour (0 to 23)
+- holiday : whether day is holiday or not (extracted from http://dchr.dc.gov/page/holiday-schedule)
+- weekday : day of the week
+- workingday : if day is neither weekend nor holiday is 1, otherwise is 0.
++ weathersit :
+- 1: Clear, Few clouds, Partly cloudy, Partly cloudy
+- 2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
+- 3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
+- 4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog
+- temp : Normalized temperature in Celsius. The values are divided to 41 (max)
+- atemp: Normalized feeling temperature in Celsius. The values are divided to 50 (max)
+- hum: Normalized humidity. The values are divided to 100 (max)
+- windspeed: Normalized wind speed. The values are divided to 67 (max)
+- casual: count of casual users
+- registered: count of registered users
+- cnt: count of total rental bikes including both casual and registered
+
+```{r}
+str(day)
+str(hour)
+```
+
+
+(c) (5 pts) Notice that some of the columns, e.g., "holiday"" are represented as numbers, even though they
+represent categories (e.g., whether a day is a holidy or not). These columns will likely be easier to use
+if they are treated as factors. Convert any columns that should be treated categorically (rather than as
+continuous numbers) to factors.
+
+```{r}
+day$season <- as.factor(day$season)
+day$holiday <- as.factor(day$holiday)
+day$weekday <- as.factor(day$weekday)
+day$workingday <- as.factor(day$workingday)
+day$weathersit <- as.factor(day$weathersit)
+#str(day)
+
+hour$season <- as.factor(hour$season)
+hour$holiday <- as.factor(hour$holiday)
+hour$weekday <- as.factor(hour$weekday)
+hour$workingday <- as.factor(hour$workingday)
+hour$weathersit <- as.factor(hour$weathersit)
+#str(hour)
+
+```
+
+
+(d) (3 pts) The dteday column is imported as a factor rather than a date, convert this column to a date.
+```{r}
+day$dteday <- as.Date(day$dteday)
+hour$dteday <- as.Date(hour$dteday)
+
+#str(day)
+#str(hour)
+```
+
+Question 2 (15 pts)
+(a) (5 pts) You want to know if (overall) ridership has increased since the company was founded. Make a
+graph where the x-axis shows the date, and the y axis shows the total ridership that day. Hint: Think
+about whether the "day" data or the "hour" data will be easier to use for this purpose. Give your plot
+a title.
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+
+ggplot(day, aes(x=day$dteday,y=day$cnt)) + xlab("Date") + ylab("Total Ridership") + ggtitle("Has the overall ridership increased since the company was founded?") + geom_point() + geom_smooth(colour="red", fill='white') + geom_smooth(colour='blue',method="lm", fill='white') 
+
+ggplot(day, aes(x=day$dteday, y=day$cnt)) + xlab("Date") + ylab("Total Ridership") + ggtitle("Has the overall ridership increased since the company was founded?") + geom_smooth(colour='black', fill='blue') +geom_area()
+```
+
+```{r}
+lm_eqn <- function(df)
+  {
+    m <- lm(y ~ x, df);
+    eq <- as.expression(substitute(italic(y) == a*italic(x) + b*",",
+         list(b = signif(m$coef[[1]],5 ), 
+              a = signif(m$coef[[2]], 5))))
+    p <- as.expression(substitute(italic('p-value')~"="~p*",",
+              list(p = signif(summary(m)$coef[2,4], 5))))
+    r <- as.expression(substitute(italic(r)^2~"="~r2,
+              list(r2 = signif(summary(m)$adj.r.squared, 5))))
+    list(eq = eq, p = p, r = r)
+}
+print(lm_eqn(data.frame(x=day$dteday, y=day$cnt)))
+
+ggplot(day, aes(x=day$dteday,y=day$cnt)) + 
+  xlab("Date") + 
+  ylab("Total Ridership") + 
+  ggtitle("Has the overall ridership increased since the company was founded?") + 
+  geom_point(size=0.5) + 
+  geom_smooth(colour="red", fill='white') + 
+  geom_smooth(colour='blue',method="lm", fill='white') + 
+  #ggplotRegression(lm(day$cnt~day$dteday, data=day)) + 
+  annotate(x = as.Date('2011-07-1'), y = 8000, 
+            label=as.character(lm_eqn(data.frame(x=day$dteday, y=day$cnt))$eq),
+            parse=TRUE, geom = "text") +
+  annotate(x = as.Date('2011-07-1'), y = 7500, 
+            label=as.character(lm_eqn(data.frame(x=day$dteday, y=day$cnt))$p),
+            parse=TRUE, geom = "text") +
+  annotate(x = as.Date('2011-07-1'), y = 7000, 
+            label=as.character(lm_eqn(data.frame(x=day$dteday, y=day$cnt))$r),
+            parse=TRUE, geom = "text")
+  
+```
+
+```{r}
+summary(day)
+```
+(b) (3 pts) Describe the plot you see. Note when ridership goes up and when ridership goes down. Make at least one hypothesis about why this might be.
+
+Ridership reaches record highs in August of 2011 and August of 2012. Ridership evidently declines just around December and January, consistently 2011 to 2013.
+
+Hypothesis: temperatures directly correlate with ridership (i.e. lower temperatures are highyl correlated with low ridership and visa versa)
+
+(c) (5 pts) You want to know if there are more total riders on a given day depending on the season. Make a plot showing the ridership for each season. Make sure to pick a plot type that works well for categorical data. Also, please make sure your plot is colored to make it easy to read.
+
+I will aggregate ridership based on the following categories and plot in a boxplot & scatterplot.
+Winter - months(12, 1, 2) - season #1
+Spring - months(3, 4, 5) - season #2
+Summer - months(6, 7, 8) - season #3
+Fall - months(9, 10, 11) - season #4
+
+```{r}
+ggplot(day, aes(x=season, y=cnt, fill=season)) + geom_boxplot()
+ggplot(day, aes(x=day$dteday, y=cnt, color=season)) +geom_point()
+```
+
+(d) (2 points) Describe what you see in the season plot. Does it look like certain seasons are more or less popular. Which ones? Be sure to check the description of the data and state which season using words (i.e., winter, summer, spring, or fall) not just number.
+
+The boxplot is best used to analyze ridership on aggregate. It provides a clear illustration of the differentiated medians, third quartiles, and maximum ridership values by season. Winter is clearly the slowest season with the least ridership, on average, and Summer pushes approximately 3,000 above Winter for daily ridership counts. Spring competes closely with Summer which supports the hypothesis that weather is directly correlated with daily ridership count. 
+
+Generally, the plot portrays the following:
+- Summer is most popular (on aggregate)
+- Spring closely follows, and is also very popular
+- Fall, ridership experience the biggest declines
+- Winter is when we start to see upticks that lead into more positive Spring numbers
+
+note: one could argue that the hotspot for ridership is right between Summer and Spring (when temperatures are warm, just before it gets too hot)
+
+To put it succinctly: summer > spring > fall > winter
+
+Question 3 (14 pts)
+(a) (5 points) You want to know if people are riding their bikes to work. First, make a plot with date on
+the x axis, total count on the y axis, with workingday coded by color and holiday colored by shape.
+Make your points large enough so you can see if there is a difference in shape.
+
+```{r}
+
+```
+
+(b) (2 points) Do you see a difference here? Why might that be?
+
+```{r}
+
+```
+
+(c) (3 points) You think perhaps people who ride their bike to work are more likely to subscribe to the bike
+share. Make the same plot you just made two more times, once for casual riders and once for registered
+riders. Make sure to give each plot a title describing which group it represents!
+
+```{r}
+
+```
+
+(d) (4 points) What do you notice looking at these two plots? Be sure to describe the pattern you see in
+the casual riders, and the pattern you see in the registered riders. Based on this information, what do
+you conclude about people who ride their bikes to work?
+
+```{r}
+
+```
+
+
+
+Question 4 (16 pts)
+(a) (8 points) You think there is an effect of weather on ridership. Make at least 3 plots to investigate
+this relationship. You should be sure to use the x-axis, the y-axis, and color on at least one of your
+plots. Your plots should not all be the same type (e.g., don?t just make three point plots). Also be sure
+to consider that weather might have a different effect on casual riders as opposed to registered riders.
+(Hint, since it?s not the same temperature all day long, you may want to look at the hour data.) (4
+points for clean, relevant plots, 4 points for written explanation of findings.)
+
+```{r}
+
+```
+
+(b) (8 points) You are interested in what time of day riders ride their bikes. You also think this might
+be affected by weather conditions or time of year. Make at least 3 plots to investigate time of day
+riders ride their bikes, and how this is affected by other variables. Be sure to use the x-axis, the y-axis,
+and color on at least one of your plots. Your plots should not all be the same type (e.g., don?t just
+2
+make three point plots.) Also, be sure to consider how casual riders and registered riders may behave
+differently. (4 points for clean, relevant plots, 4 points for written explanation of findings.)
+3

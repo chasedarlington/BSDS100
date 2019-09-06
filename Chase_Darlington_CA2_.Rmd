@@ -1,0 +1,71 @@
+---
+title: "Chase Darlington_CA2"
+author: "Chase Darlington"
+date: "September 4, 2018"
+output: pdf_document
+---
+
+1. (5 points) Create an .R script that when run performs the following tasks:
+(a) Assign x = 3 and y = 4
+```{r}
+x=3
+y=4
+print(x)
+print(y)
+```
+(b) Calculates ln(x + y)
+```{r}
+print(log(x+y))
+```
+(c) Calculates log10((xy)/2)
+```{r}
+print(log10((x*y)/2))
+```
+(d) Calculates 2???3 x + ???4 y
+```{r}
+print(x^(1/3))
+print(y^(1/4))
+print(2*x^(1/3)+y^(1/4))
+```
+(e) Calculates 10^(x???y) + exp(xy)
+```{r}
+print(10^(x-y))
+print(exp(x*y))
+print(10^(x-y)+exp(x*y))
+```
+2. (5 points) Why does the following code not work?
+
+my_variable <- 10
+
+my_Variable
+
+"> Error in eval(expr, envir, enclos): object 'my_Variable' not found"
+```{r}
+#my_variable <- 10
+#my_Variable
+```
+R is case-sensitive; therefore, my_variable is not recognized by my_Variable. This is why the error message reads: object 'my_Variable' is not found.
+```{r}
+my_variable <- 10
+my_variable
+```
+3. (5 points) While in RStudio, press Alt + Shift + K. What happens? How can you get to the same place using the menus?
+
+Alt + Shift + K is the short-cut to the "short-cut menu" 
+
+To navigate there with the menus, go to the "tools" tab and mouse down to "keyboard shortcuts"
+
+4. (5 points) Do you currently use Excel? What are the advantages to using R over Excel?
+
+I do currently use Excel (extensively for business courses and personal management). R has the great advantage of being able to compute much quicker, especially when working with large data source or complicated algorithms. Additionally, R feels more "customizeable".
+
+5. (5 points) What does GUI stand for?
+
+Graphical User Interface
+
+6. (5 points) The term Big Data is used frequently these days, but a formal definition doesn't exist. I provided on commonly used definition in lecture. Discuss what Big Data means to you and where you've run across the term. If you have not witnessed the term before, find an article or website that uses it and talk about its use in that article.
+
+Big data refers to extremely large data sets where data scientists can analyze trends (or generally, data) using computational tools like statistical mathematics, machine-learning, and more
+I have run across the term in business, and particularly in marketing, where companies are analyzing financial metrics and user behavior. Many professors discuss the topic at USF, particularly Professor Sidaoui in the School of Management.
+
+

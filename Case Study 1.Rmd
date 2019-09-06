@@ -1,0 +1,367 @@
+---
+title: "Case Study 1"
+author: "Chase Darlington"
+date: "October 3, 2018"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#for MAC
+load("~/Downloads/ramen.Rdata")
+```
+
+
+```{r}
+#for PC
+#load("C:\\Users\\Chase Darlington\\Downloads\\ramen.RData")
+
+#ramen
+#names(ramen)
+```
+
+1) (3 pts) How many different brands are reviewed in the data set? Do you recognize any of them?
+
+355 brands are reviewed in the data set.
+```{r, }
+#rawbrands <- ramen$Brand
+#brands <- data.frame(rawbrands[!duplicated(rawbrands)])
+#brands
+#nrow(brands)
+#nrow(ramen$Brand[!duplicated(ramen$Brand)])
+
+#or
+
+length(ramen$Brand[!duplicated(ramen$Brand)])
+
+```
+
+
+2) (3 pts) What years do we have "top ten" data from? (Hint: This will require turning the Top Ten
+column into a string column and using some of our string functions)
+
+We have top ten information from 2012-2016
+```{r}
+ramen$Top.Ten[ramen$Top.Ten==""] <- NA
+Top.Ten <- na.omit(ramen)
+#Top.Ten
+
+seperatedTop.Ten <- data.frame(do.call('rbind', strsplit(as.character(Top.Ten$Top.Ten), " #", fixed=TRUE)))
+#seperatedTop.Ten
+levels(seperatedTop.Ten$X1)
+```
+
+
+3) (3 pts) Which ramen brands are from the United States (hint: beware of abbreviations!)?
+
+Refer below for the 49 brands available in the United States
+```{r}
+#levels(ramen$Country)
+sort(ramen$Country[!duplicated(ramen$Country)])
+#Note: there exists a USA and United States
+#So, reassign values
+ramen$Country[ramen$Country=="United States"] <- "USA"
+#Check 3. For some reason USA is still listed as a level...
+#levels(ramen$Country)
+#...so, Check 2
+ramen[ramen$Country=="United States"]
+ramen$Country[ramen$Country=="United States"]
+#reprint all the countries; no duplicates
+#sort(ramen$Country[!duplicated(ramen$Country)])
+#levels(ramen$Country)
+
+
+
+#Then, Dubai isn't a country, nor Sarawak: correct to UAE, and Malaysia; Hong Kong is a special administrative region, so it remains.
+ramen$Country[ramen$Country=="Dubai"] <- "UAE"
+ramen$Country[ramen$Country=="Sarawak"] <- "Malaysia"
+#sort(ramen$Country[!duplicated(ramen$Country)])
+```
+
+```{r}
+#notably, all United States entries were converted to USA
+USbrands <- (ramen[ramen$Country=="USA",])
+USbrands <- (USbrands[!duplicated(USbrands$Brand),])
+length(USbrands$Brand)
+data.frame(USbrands$Brand)
+data.frame(sort(USbrands$Brand))
+
+```
+
+4) (3 pts) Has any brand of ramen won the #1 slot in the Top Ten Ramens list more than once? Which
+brand(s)?
+
+MyKuali ranked #1 2014 to 2015, 2 years in a row
+
+```{r}
+#reapply NA,just in case
+ramen$Top.Ten[ramen$Top.Ten==""] <- NA
+Top.Ten <- na.omit(ramen)
+#Top.Ten
+
+seperatedTop.Ten <- data.frame(do.call('rbind', strsplit(as.character(Top.Ten$Top.Ten), " #", fixed=TRUE)))
+class(seperatedTop.Ten)
+colnames(seperatedTop.Ten) <- c("Year","Rank")
+#seperatedTop.Ten
+Top.Ten <- cbind(Top.Ten, seperatedTop.Ten)
+Top.Ten <- Top.Ten[order((Top.Ten$Year)),]
+Top.Ten <- Top.Ten[order((Top.Ten$Rank)),]
+Top.Ten <- Top.Ten[order(stringr::str_length(Top.Ten$Rank)),]
+#Top.Ten
+
+Top.Ten[Top.Ten$Rank==1,]
+#MyKuali ranked #1 2014 to 2015 
+
+```
+
+
+5) (3 pts) Which brand has the highest average star rating? If there is a tie, report multiple brands.
+
+24 brands tie in at 5 stars (ChoripDong, Daddy, Daifuku...). Refer to the data frame below.
+
+```{r}
+AvgStarRatings <- aggregate( ramen$Stars ~ ramen$Brand, ramen, mean )
+AvgStarRatings[AvgStarRatings$`ramen$Stars`==5.0,]
+
+#Abbie's method
+ramen_avgs <- data.frame(brands = as.character(unique(ramen$Brand)), avg_ratings=NA)
+for(i  in ramen_avgs$brand){ramen_avgs[ramen_avgs$brands==i, "avg_ratings"] <- mean(ramen[ramen$Brand==i, "Stars"], na.rm=T)}
+ramen_avgs
+
+#Abbie's alternative method
+ramen_avgs <- aggregate(Stars ~ Brand, data=ramen, mean)
+ramen_avgs
+
+###An unasked question
+
+winning_brands <- ramen_avgs[ramen_avgs$Stars == max(ramen_avgs$Stars, na.rm=F), "Brand"]
+length(winning_brands)
+#length(ramen[ramen$Brand %in% winning_bran
+```
+
+6) (5 pts) Is the way a ramen is packaged related to which country it is from?
+
+There is no correlation between packaging style and a country's level of cultural diversity or development, as observed in the plot below. But, it is obvious that pack, cup, and bowl are widely pertinent in all countries (in descending order of significance). Notably, Canada and Australia use less packs than cups.
+
+```{r}
+#names(ramen)
+#head(ramen)
+#Style indicates packaging
+#data.frame(sort(unique(ramen$Style)))
+#Bar, bowl, box, can, cup, pack, tray
+
+#is packaging correlated to country of origin?
+install.packages("ggpubr")
+library("ggpubr")
+#ggscatter(ramen, x = "Style", y = "Country", 
+          #add = "reg.line", conf.int = TRUE, 
+          #cor.coef = TRUE, cor.method = "pearson",
+          #xlab = "Country of Origin", ylab = "Packaging Style")
+
+#another way, too
+
+table(ramen$Style, ramen$Country)
+
+```
+
+
+7) (5 pts) What is the average, maximum, and minimum rating for ramens from the US? What about for
+ramens from Singapore? Based on your findings, which country do you expect to land in the Top Ten
+more often? Check your prediction.
+```{r}
+mean(ramen[ramen$Country == "USA", "Stars"],  na.rm = T )
+max(ramen[ramen$Country == "USA", "Stars"],  na.rm = T )
+min(ramen[ramen$Country == "USA", "Stars"],  na.rm = T )
+
+mean(ramen[ramen$Country == "Singapore", "Stars"],  na.rm = T )
+max(ramen[ramen$Country == "Singapore", "Stars"],  na.rm = T )
+min(ramen[ramen$Country == "Singapore", "Stars"],  na.rm = T )
+
+###Based on my findings Singapore would appear in Top Ten rankings more often because their ramen's mean is higher than USA's
+
+(ramen[ramen$Country == "Singapore", "Top.Ten"])
+(ramen[ramen$Country == "USA", "Top.Ten"])
+
+###My prediction is true. Singapore's ramen appears in the top ten 7 times while USA's appears only once
+
+
+#Abbie's method -- unfinished
+#(ramen[ramen$Country=="Singapore" & ramen$Top.Ten !="","Stars"])
+#"Stars" & ramen$Top.Ten !="",
+```
+
+
+8) (5 pts) Which country makes the most ramen? Which country makes the best ramen? How did you
+define "best"? Why? Was the country that makes the best ramen also the country that makes the
+most ramen?
+```{r}
+sort(table(ramen$Country), decreasing=TRUE)
+#Japan make the most ramen
+
+w <- table(ramen$Country, ramen$Stars==5)
+#w
+sort(w[,2], decreasing = TRUE)
+#Japan has the most 5 start rating
+# In conclusion Japan make the most ramen and the best ramen
+```
+
+
+9) (5 pts) How many ramens are considered spicy as part of their variety (hint, don’t forget that "spicy""
+and "Spicy"" are both spicy)? Are spicy ramens typically rated higher than non-spicy ramens?
+```{r}
+library(stringr)
+sum(str_count(ramen$Variety, "Spicy"))+
+  sum(str_count(ramen$Variety, "spicy"))
+#277
+```
+
+
+10) (5 pts) Based on this data set, what effect does saltiness have on ramen ratings?
+
+Higher percentage salt content is significantly correlated with ramen ratings. The plot below illustrates and the correlation test confirms; note the low p-value and >0.5 correlation coefficient.
+
+```{r}
+plot(ramen$perc_salt, ramen$Stars)
+
+cor.test(ramen$perc_salt, ramen$Stars)
+```
+
+
+11) (5 pts) Are there certain styles, countries, brands, or flavors of ramen that tend to use more or less
+salt? Feel free to be creative in how you parse "variety" into flavors.
+```{r}
+mean(ramen$perc_salt)
+SaltRatingsbyStyle <- aggregate(ramen$perc_salt ~ ramen$Style, ramen, mean )
+SaltRatingsbyStyle[SaltRatingsbyStyle$`ramen$perc_salt`>19,]
+#The countries that use salt more than the mean 
+SaltRatingsbyStyle[SaltRatingsbyStyle$`ramen$perc_salt`<19,]
+#The countries that use salt less than the mean 
+
+SaltRatingsbyCountry <- aggregate( ramen$perc_salt ~ ramen$Country, ramen, mean )
+
+SaltRatingsbyCountry[SaltRatingsbyCountry$`ramen$perc_salt`>19,]
+#The countries that use salt more than the mean 
+SaltRatingsbyCountry[SaltRatingsbyCountry$`ramen$perc_salt`<19,]
+#The countries that use salt less than the mean 
+
+SaltRatingsbyBrand <- aggregate( ramen$perc_salt ~ ramen$Brand, ramen, mean )
+head(SaltRatingsbyBrand[SaltRatingsbyBrand$`ramen$perc_salt`>19,])
+#The Brands that use salt more than the mean 
+head(SaltRatingsbyBrand[SaltRatingsbyBrand$`ramen$perc_salt`<19,])
+#The Brands that use salt more than the mean 
+
+
+#unique(ramen$Variety)
+#install.packages("ggpubr")
+#library(ggpubr)
+ramen$flavor<-NA  
+#ramen
+ramen$Variety <- str_to_lower(ramen$Variety)
+
+ramen$flavor[grep(c("curry"), ramen$Variety)] <- "curry"
+ramen$flavor[grep(c("tomato"), ramen$Variety)] <- "tomato"
+ramen$flavor[grep(c("sesame"), ramen$Variety)] <- "sesame"
+ramen$flavor[grep(c("toona"), ramen$Variety)] <- "toona"
+ramen$flavor[grep(c("udon"), ramen$Variety)] <- "udon"
+ramen$flavor[grep(c("kimchi"), ramen$Variety)] <- "kimchi"
+ramen$flavor[grep(c("beef"), ramen$Variety)] <- "beef"
+ramen$flavor[grep(c("chicken"), ramen$Variety)] <- "chicken"
+ramen$flavor[grep(c("shoyu"), ramen$Variety)] <- "shoyu"
+ramen$flavor[grep(c("miso"), ramen$Variety)] <- "miso"
+ramen$flavor[grep(c("laksa"), ramen$Variety)] <- "laksa"
+ramen$flavor[grep(c("mushroom"), ramen$Variety)] <- "mushroom"
+ramen$flavor[grep(c("tempura"), ramen$Variety)] <- "tempura"
+ramen$flavor[grep(c("yakisoba"), ramen$Variety)] <- "yakisoba"
+ramen$flavor[grep(c("seafood", "prawn", "prawns", "shrimp", "shrimps"), ramen$Variety)] <- "seafood"
+#ramen
+
+SaltRatingsbyFlavor <-aggregate( ramen$perc_salt ~ ramen$flavor, ramen, mean )
+SaltRatingsbyFlavor[SaltRatingsbyFlavor$`ramen$perc_salt`>19,]
+#The Flavor that use salt more than the mean 
+SaltRatingsbyFlavor[SaltRatingsbyFlavor$`ramen$perc_salt`<19,]
+#The Flavor that use salt less than the mean 
+
+
+```
+
+
+```{r}
+mean(ramen$perc_salt)
+AvgSaltRatings <- aggregate( ramen$perc_salt ~ ramen$Country, ramen, mean )
+
+#there are certain ramen from certain country, brand that uses more salt than other.
+
+
+#plot(ramen$perc_salt, ramen$Country)
+#plot(data.frame(ramen$Country, ramen$perc_salt))
+#plot(data.frame(ramen$Brand, ramen$perc_salt))
+
+```
+
+
+12) [Open Ended] (10 pts) You have been hired by a new ramen start up, Roamin' Ramen. They want to
+better understand the ramen market and ask you to break down ramen into 5 collections of "similar" 
+ramens. How do you go about it? Discuss what you find.
+
+Key varieties: curry, tomato, sesame, toona, udon, kimchi, beef, chicken, seafood/prawns/shrimps, tempura, mushroom, shoyu, laksa, yakisoba
+Main 5 Collections: Chicken, Beef, Seafood, Curry, Udon
+
+
+There are 5 main kinds of ramen. The japanese would normally say: Shoyu, Shio, Miso, Curry. But, globally, the distinct kinds are actually chicken, beef, seafood, curry, and udon. The code below parses varieties for distinct flavors and counts them. Refer below for the actual results. 
+
+```{r}
+#unique(ramen$Variety)
+
+sort(table(ramen$flavor), decreasing=TRUE)
+
+#1 - chicken, 2 - beef, 3 - seafood, 4 - curry, 5 - udon
+
+```
+
+
+13) [Open Ended] (10 pts) Roamin' Ramen wants to make the next Top Ten Ramen winner. What
+recommendations do you have for them based on this data set? Be sure to use the columns provided,
+and generate your own ideas by examining the Variety column. Support your assertions with statistics
+(like mean, min, max or others you prefer) and at least one plot.
+
+Recommendations: Pack --> Laksa --> Low sodium; Learn from the Japanese and Singaporean ramen houses, relocate to those countries, and/or partner therein
+
+```{r}
+ramen$Top.Ten[ramen$Top.Ten==""] <- NA
+Top.Ten <- na.omit(ramen)
+addtop <- data.frame(do.call('rbind', strsplit(as.character(Top.Ten$Top.Ten), " #", fixed=TRUE)))
+colnames(addtop)<-c("Year", "Rank")
+Top.Ten <- cbind(Top.Ten, addtop)
+Top.Ten$Rank<-as.double(Top.Ten$Rank)
+#sort((Top.Ten$Rank), decreasing=FALSE)
+#Top.Ten[order(as.numeric(Top.Ten$Rank), decreasing=FALSE),]
+#Top.Ten
+
+tab1 <- table(Top.Ten$Rank, Top.Ten$Style)
+tab1 <- rbind(tab1, Total = colSums(tab1))
+tab1
+#14 of the recently ranked Top Ten used "Pack" styles, while there were no "Cup" styles and only 4 "Tray" styles; note, in general pack, cup, and tray styles are most popular in order of decreasing popularity
+
+tab2 <- table(Top.Ten$Rank, Top.Ten$flavor)
+tab2 <- rbind(tab2, Total = colSums(tab2))
+tab2
+#Yakisoba, Laksa, Curry, and Chicken are all strong flavors aong the Top.Ten; Laksa has 2 placements for the #1 title, so we would recommend Laksa as a selected flavor
+
+tab3 <- table(Top.Ten$Rank, Top.Ten$Country)
+tab3 <- rbind(tab3, Total = colSums(tab3))
+tab3[11,]
+#We would recommend learning from, associating with, or partnering with a Japanese or Singaporean ramen house because ramens from those countries consistently rank in the Top Ten
+
+plot(Top.Ten$Rank, Top.Ten$perc_salt, abline(lm(Top.Ten$perc_salt ~ Top.Ten$Rank)))
+cor(Top.Ten$perc_salt, Top.Ten$Rank)
+#Finally, saltiness will have a 40% impact on the rating, and there is positive correlation between higher ranks and lower saltiness. So, we would recommend reducing percentage salt to a level of 18% to maximize Top Ten likelihood(based on the line of best fit in the plot below).
+
+
+```

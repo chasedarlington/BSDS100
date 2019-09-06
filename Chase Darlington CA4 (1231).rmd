@@ -1,0 +1,209 @@
+---
+title: "Chase Darlington CA4123"
+author: "Chase Darlington"
+date: "September 11, 2018"
+output: pdf_document
+---
+
+BSDS 100: Intro to Data Science with R
+Assignment 4
+by Chase Darlington
+
+Directions: For all questions in this assignment, write complete sentences and fully answer any question
+that is asked. Provide all R code and solutions by knitting your final RStudio file into a single file named
+[your name] CA4.pdf. This assignment is due next Tuesday by the beginning of class (by 2:39 PM, Tuesday,
+September 11). The assignment is worth 30 points. Late assignments will automatically have 10 points
+deducted. Remember to include all R code and results (except when noted) to receive full credit.
+
+
+1. Create the vector
+> myAtomicVector <- c(1, 4, 3, 2, NA, 3.22, -44, 2, NA, 0, 22, 34)
+Now, create code that runs to answer each of the following questions.
+
+```{r 1}
+myAtomicVector <- c(1, 4, 3, 2, NA, 3.22, -44, 2, NA, 0, 22, 34)
+myAtomicVector
+table(myAtomicVector) []
+```
+
+(a) (2 points) How many positive numbers (> 0) are there in this vector (do not count NAs)?
+```{r 1a}
+table1 <- table(myAtomicVector)
+table1[names(table1)>0]
+sum(table1[names(table1)>0])
+table(myAtomicVector>0)
+```
+There are "8" positive numbers (>0) in the "myAtomicVector" vector, not counting NAs.
+
+  (b) (2 points) How many negative numbers (< 0) are there in this vector (do not count NAs)?
+```{r 1b}
+table1 <- table(myAtomicVector)
+table1[names(table1)<0]
+sum(table1[names(table1)<0])
+table(myAtomicVector<0)
+```
+There is "1" negative number (<0) in the "myAtomicVector" vector, not counting NAs
+
+  (c) (2 points) How many 0’s are there in this vector (do not count NAs)?
+```{r 1c}
+table1 <- table(myAtomicVector)
+table1[names(table1)==0]
+sum(table1[names(table1)==0])
+table(myAtomicVector==0)
+``` 
+There is "1" zero in the "myAtomicVector" vector, not counting NAs
+
+  (d) (2 points) How many NAs are there is this vector?
+```{r 1d}
+myAtomicVector[myAtomicVector=="N/A"]
+frequency("N/A"==myAtomicVector)
+sapply(myAtomicVector, function(x) sum(is.na(x)))
+sum(sapply(myAtomicVector, function(x) sum(is.na(x))))
+sum(is.na(myAtomicVector))
+```  
+  (e) (2 points) How many numbers in the vector are non-zero and not NAs?
+```{r 1e}
+table(myAtomicVector!=0)
+myAtomicVector!=0
+list(table(myAtomicVector)!=0)
+```
+  (f) (2 points) What is the sum of the positive numbers in this vector?
+```{r 1f}
+subset(myAtomicVector, myAtomicVector>0)
+sum(myAtomicVector[which(myAtomicVector>0)])
+```
+  (g) (2 points) What is the sum of the negative numbers is this vector?
+```{r 1g}
+subset(myAtomicVector, myAtomicVector<0)
+sum(myAtomicVector[which(myAtomicVector<0)])
+```  
+
+
+2. Consider a vector of length 1000, where Fn is the nth number in the sequence. Then the Fibonacci
+sequence is the vector where the following recursion holds.
+
+Fn = Fn-1 + Fn-2
+
+That is, the nth number in the sequence will be the sum of the previous two numbers.
+Create a vector, Fib.vec, that has the first 1000 numbers in the Fibonacci sequence using the
+following code (which includes a for loop that we’ll talk more about later in this course):
+
+```{r 2}
+#initialize the vector for memory
+Fib.vec <- rep(0, 1000)
+#store the first two entries to be 1
+Fib.vec[1] <- 1
+Fib.vec[2] <- 1
+#iterate to get the remaining values
+for(i in 3:1000){
+  Fib.vec[i] <- Fib.vec[i-1] + Fib.vec[i-2]
+}
+```
+(a) (2 points) What are the first 8 and last 8 entries of Fib.vec?
+```{r 2a}
+#initialize the vector for memory
+Fib.vec <- rep(0, 1000)
+#Fib.vec
+#store the first two entries to be 1
+Fib.vec[1] <- 1
+Fib.vec[2] <- 1
+#iterate to get the remaining values
+for(i in 3:1000){
+  Fib.vec[i] <- Fib.vec[i-1] + Fib.vec[i-2]
+}
+
+Fib.vec[1:8]
+Fib.vec[993:1000]
+
+#a <- list(Fib.vec[1:8])
+#b <- list(Fib.vec[993:1000])
+#list(a,b)
+#c(a,b)
+
+#rbind(Fib.vec[1:8],Fib.vec[993:1000])
+#table3a <- merge(Fib.vec[1:8],Fib.vec[993:1000])
+#names(table3a)
+#colnames(table3a)[names(table3a) == "x"] <- "First 8"
+#colnames(table3a)[names(table3a) == "y"] <- "Last 8"
+#table3a
+
+```
+(b) (2 points) Using the Fibonacci numbers generated above, generate a vector (of length 999) with
+values (again, don’t print these out)
+Zn = Fn sub(n+1) / Fn sub(n)
+For this sequence, one could use a for loop as used in part (a), or better yet note that dividing
+two vectors of the same length will return a vector whose entries contain the division of entries in
+each vector. This is very useful for such calculations and this vector operation is fairly unique to
+R!
+```{r 2b}
+#initialize the vector for memory
+Fib.vec <- rep(0, 1000)
+#store the first two entries to be 1
+Fib.vec[1] <- 1
+Fib.vec[2] <- 1
+#iterate to get the remaining values
+for(i in 3:1000){
+  Fib.vec[i] <- Fib.vec[i-1] + Fib.vec[i-2]
+}
+
+
+Fib2.vec <- rep(0, 999)
+#store the first entry to be 1
+#Fib.vec[1] <- 1
+#iterate to get the remaining values
+for(i in 3:999){
+  Fib2.vec[i] <- (Fib.vec[i+1] / Fib.vec[i])
+}
+Fib2.vec[1:8]
+```
+  (c) (2 points) Plot the first 10 entries of the vector Zn using the command plot(Zn[1 : 10]). Then
+add a line to the plot using the following command abline(h = (1 + sqrt(5))/2). This value
+is known as the golden ratio in mathematics.
+```{r 2c}
+plot(Fib2.vec[1:10])
+abline(h = (1 + sqrt(5))/2)
+```
+(d) (2 points) Comment on the plot that you obtain. What do you observe?
+```{r 2d}
+#2 slope of line h=0 and Fib2.vec ~= expression(H) except for 2 outliers: values x=1,2 are outliers
+```
+(e) (2 points) What is wrong with typing the following code?
+  x <- Fib.vec(1:5)
+```{r 2e}
+# Fib.vec is interpreted as a function because of the parenthesis, and therefore produces an error because there is no such registered function. It appears as though it is human/logical error and the user meant to input brackets as opposed to parenthisis
+```
+3. Using the Fibonacci vector above, create the following data structures. Remember that using the ?foo
+will provide documentation on the function foo as needed. And be careful about the use of arguments
+here to get the data structure you want.
+• A matrix of size 100×10 named Fib.matrix1 whose columns, when stacked on top of one another
+will return the original vector.
+• A matrix of size 100 × 10 named Fib.matrix2 whose rows, when stacked side by side will return
+the original vector.
+• An array of dimension 10 × 10 × 10 names Fib.array where each 10 × 10 matrix in the array is
+such that when its columns are stacked on top of one another would generate a Fibbonaci vector
+of length 100.
+Answer the following questions
+```{r 3}
+Fib.matrix1 <- matrix(Fib.vec, nrow=100, ncol=10)
+Fib.matrix2 <- matrix(Fib.vec, nrow=100, ncol=10, byrow=T)
+#Fib.matrix2
+#Fib.matrix1
+Fib.matrix1[18,]
+mean(Fib.matrix1[18,])
+sd(Fib.matrix2[,8])
+Fib.array <- array(Fib.vec, c(10,10,10))
+Fib.array[5,2,8]
+```
+(a) (2 points) What is the mean of the 18th row of Fib.matrix1?
+```{r 3a}
+#Irrational number: 3.17...
+```
+(b) (2 points) What is the standard deviation of the 8th column of Fib.matrix2?
+```{r 3b}
+#Infinity
+```
+(c) (2 points) What is the entry in the 5th row of the 2nd column of the 8th matrix in Fib.array?
+```{r 3c}
+#The entry in the 5th row of the 2nd column of the 8th matrix in Fib.array is 1.1931... (refer above)
+```
+

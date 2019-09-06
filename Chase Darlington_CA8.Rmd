@@ -1,0 +1,169 @@
+---
+title: "BSDS 100: Intro to Data Science with R Assignment 8"
+author: "Chase Darlington (University of San Francisco)"
+date: "11/13/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Directions: For all questions in this assignment, write complete sentences and fully answer any question that is asked, and use R to answer each question. Provide all R code and solutions by knitting your final RStudio file into a single file named [your name] CA8.pdf. Late assignments will automatically have 10 points deducted, and will not be accepted after the answer key is posted (1 week following the due date).
+
+```{r packages, include=FALSE}
+#install.packages("XML")
+#install.packages("rvest")
+#install.packages("tidyverse")
+library(RCurl)
+library(XML)
+library(rvest)
+library(tidyverse)
+```
+
+1. From <https://r4ds.had.co.nz/strings.html> Create regular expressions to find all words from stringr::words that:
+
+#SETUP
+```{r}
+words <- stringr::words
+str(words)
+words <- data.frame(words)
+nvowels <- str_count(tolower(words[,1]), "[aeoiu]")
+total_letters <- str_count(tolower(words[,1]), "\\w")
+starts_with_vowel <- grepl("^[aeiou]", tolower(words[,1]))
+ends_with_vowel <- grepl("[aeiou]$", tolower(words[,1]))
+ends_with_ed <- grepl("ed$", tolower(words[,1]))
+ends_with_eed <- grepl("eed$", tolower(words[,1]))
+ends_with_ed_not_eed <- ends_with_ed - ends_with_eed
+ends_with_ing <- grepl("ing$", tolower(words[,1]))
+ends_with_ise <- grepl("ise$", tolower(words[,1]))
+ends_with_ing_or_ise <- ends_with_ing + ends_with_ise
+words <- cbind(words,nvowels, total_letters, starts_with_vowel, ends_with_ed_not_eed, ends_with_ing_or_ise)
+```
+(a) (2 points) Start with a vowel.
+```{r}
+head(words[words$starts_with_vowel==TRUE,])
+tail(words[words$starts_with_vowel==TRUE,])
+```
+(b) (2 points) That only contain consonants. (Hint: thinking about matching “not”-vowels.)
+```{r}
+words[words$nvowels==0,]
+#technically y is a vowel in these words, but I believe this answers the question
+```
+(c) (2 points) End with ed, but not with eed. 
+```{r}
+words[words$ends_with_ed_not_eed==TRUE,]
+```
+(d) (2 points) End with -ing or -ise.
+```{r}
+words[words$ends_with_ing_or_ise==TRUE,]
+```
+2. (4 points) Write and test a regular expression that will match a phone number in the format 555-555-5555
+
+This variable complexity function is more efficient than a for loop, because it executes only as many commands as necessary to invalidate/validate a US number in the format 555-555-5555 (admittedly, I can think of a few quicker ways, especially if you strip out the "-")
+```{r}
+US_phone_validation <- function(x){
+  if(nchar(mynum)==12){
+    hyphen1 <- substr(mynum, start = 4, stop = 4)
+    hyphen2 <- substr(mynum, start = 8, stop = 8)
+    areacode <- substr(mynum, start = 1, stop = 3)
+    numpart1 <- substr(mynum, start = 1, stop = 3)
+    numpart2 <-substr(mynum, start = 1, stop = 3)
+    if(hyphen1=="-"){
+      if(hyphen2=="-"){
+        if(is.na(as.integer(areacode))==F){
+          if(is.na(as.integer(numpart1))==F){
+            if(is.na(as.integer(numpart2))==F){
+              print("Thank you for your input. We will reach out to you soon.")
+            }else{print("Please edit your entry to match the format: 555-555-5555")}
+          }else{print("Please edit your entry to match the format: 555-555-5555")}
+        }else{print("Please edit your entry to match the format: 555-555-5555")}
+      }else{print("Please edit your entry to match the format: 555-555-5555")}
+    }else{print("Please edit your entry to match the format: 555-555-5555")}
+  }else{print("Please edit your entry to match the format: 555-555-5555")}
+}
+
+mynum <- ("253-948-2507")
+US_phone_validation(mynum)
+
+mynum <- ("2539482507")
+US_phone_validation(mynum)
+```
+
+3. (6 points) Use for() and if() to loop through the numbers 1 to 30 and print ”divisible by 3” for any that are divisible by 3 and print ”not divisible by 3” for any that are not divisible by 3
+```{r}
+#one way
+numbers <- 1:30  
+is_divisible_by_3 <- NA
+num <- data.frame(cbind(numbers, is_divisible_by_3))
+for(i in 1:length(numbers)){
+  j <- num$numbers[i]
+  if(num$numbers[j]%%3==0){
+    num$is_divisible_by_3[i] <- "divisible by 3"
+    }
+  else{
+      num$is_divisible_by_3[i] <- "not divisible by 3"
+    }
+}
+num
+```
+
+```{r}
+#another way
+n <- 1:30
+for(i in 1:length(n)){
+  if(n[i]%%3==0){
+    print(paste(n[i], "is divisible by 3", sep=" "))
+    }
+  else{
+    print(paste(n[i], "is not divisible by 3", sep=" "))
+    }
+}
+```
+
+
+4. (6 points) Now make a vector of the numbers 1 to 30, and use an ifelse() statement to return a vector where 1 is returned if the original number was divisible by 3 and 0 if it was not
+```{r}
+n <- 1:30
+vector <- ifelse(n%%3==0, 
+       1,
+       0)
+matrix <- as.matrix(ifelse(n%%3==0, 
+       1,
+       0))
+  
+combined_vector <- rbind(n, ifelse(n%%3==0, 
+       1,
+       0))
+
+vector
+matrix
+combined_vector
+```
+5. (3 points) Consider the following loop. What is wrong with it? What could be done to fix it?
+n <- 0
+while(n < 10){ print("hello world") n <- n - 1 }
+
+When properly formatted, the function provided is an infinite loop. The while function prints so long as n is less than 10, and counts n down (n <- n-1) at the same time. Subsequently, n is continuously less than 10, and the function runs an infinite number of times.
+
+```{r}
+n <- 0
+while(n < 10){
+  print("hello world") 
+  n = n+1
+  }
+```
+To resolve the function, simply count n up (n <- n+1), and it will no longer run an infinite number of times.
+
+6. (3 points) Write and test a switch function that returns ”woof” when passed ”dog”, ”meow” when passed ”cat”, and ”???” when passed ”fox”
+```{r}
+n <- "dog"
+switch(n, "dog"="woof", "cat"="meow", "fox"="???")
+
+n <- "cat"
+switch(n, "dog"="woof", "cat"="meow", "fox"="???")
+
+n <- "fox"
+switch(n, "dog"="woof", "cat"="meow", "fox"="???")
+#What does the fox say?
+```

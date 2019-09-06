@@ -1,0 +1,165 @@
+---
+title: "Chase Darlington_CA3"
+author: "Chase Darlington"
+date: "September 4, 2018"
+output: pdf_document
+---
+#Load the data
+
+```{r}
+data(iris)
+```
+
+#Look at the data
+```{r}
+iris
+```
+
+#Read a description of the data
+
+```{r}
+help(iris)
+```
+
+#Display the column and row names of the data
+
+```{r}
+colnames(iris)
+rownames(iris)
+```
+
+#Look at the 10th row
+
+```{r}
+iris[10, ]
+```
+
+#Look at the 3rd column
+
+
+```{r}
+iris[, 3]
+```
+
+#Alternatively, just look at the variable "Petal.Length"
+
+```{r}
+iris$Petal.Length
+```
+
+#Store columns 1-2 and rows 10-20 for later use
+
+```{r}
+subset.data <- iris[10:20, 1:2]
+```
+
+#Store the species names for later use
+
+```{r}
+Species.names <- iris$Species
+```
+
+# (a) (5 points) What are the different variables in this dataset? What are the measurements of each of these variables for the 10th sample?
+
+```{r}
+help(iris)
+```
+
+
+# 5 variables (columns) named Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, and Species.
+
+```{r}
+iris[10,]
+```
+
+     
+#   (b) (5 points) How many samples are in this dataset? What are the different species of flower that have been measured?
+
+```{r}
+help(iris)
+```
+
+
+# OR
+
+```{r}
+rownames(iris)
+```
+
+
+#sample-size: 150 cases
+
+```{r}
+iris[,5]
+```
+
+# OR
+
+```{r}
+print(Species.names)
+```
+
+
+# species: setosa, versicolor, virginica
+
+
+#calculate the 5-number summary of the {\it iris} dataset
+
+```{r}
+five.num.summary <- summary(iris)
+print(summary(iris))
+```
+
+#calculate the standard deviation across the first four columns of the dataset
+
+```{r}
+st.devs.cols <- apply(iris[,1:4], 2, sd)
+print(st.devs.cols)
+```
+
+#calculate the standard deviation across the samples of the dataset
+
+```{r}
+st.devs.rows <- apply(iris[, 1:4], 1, sd)
+print(st.devs.rows)
+boxplot(iris[, 1:4], main = "Boxplot of Iris Variables")
+```
+
+
+# (a) (5 points) How many of each species are there in the dataset?
+
+```{r}
+five.num.summary <- summary(iris)
+print(summary(iris))
+```
+
+
+# 50 of each specie
+#   (b) (5 points) Which two variables have a median that is smaller than their corresponding mean
+
+```{r}
+five.num.summary <- summary(iris)
+print(summary(iris))
+```
+
+# Sepal.Length and Sepal.Width
+#   (c) (5 points) What is the standard deviation of the sepal length measurements?
+
+```{r}
+st.devs.cols <- apply(iris[,1:4], 2, sd)
+print(st.devs.cols)
+```
+
+# sd of Sepal.Length=0.8280661
+
+#   (d) (5 points) Calculate the 5-number summary and standard deviations of the subset you extracted earlier (subset.data). What is the standard deviation of the sepal length measurements for this subset?
+
+```{r}
+summary(subset.data)
+apply(subset.data,2, sd)
+```
+
+
+# sd of Sepal Length in subset=0.4665151
+
+

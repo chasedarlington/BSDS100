@@ -1,0 +1,746 @@
+---
+title: "Technology Mergers & Acquisitions Over the Past 30 Years"
+author: "Chase Darlington, Kim Kibeom, Jack Farricker"
+date: "12/7/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, data & packages, include=FALSE}
+acquisitions <- read.csv("~/Downloads/acquisitions.csv")
+str(acquisitions)
+require("ggplot2")
+#install.packages("rworldmap")
+require("rworldmap")
+require("countrycode")
+require(tidyverse)
+require(dplyr)
+require(tidyverse)
+require(rvest)
+require(magrittr)
+require(ggmap)
+require(stringr)
+require(purrr)
+names(acquisitions)
+```
+
+```{r}
+acquisitions$Country[acquisitions$Country==""] <- NA
+acquisitions$Business[acquisitions$Business==""] <- NA
+acquisitions$Derived.products[acquisitions$Derived.products==""] <- NA
+acquisitions$Value..USD.[acquisitions$Value..USD.==""] <- NA
+acquisitions$Company[acquisitions$Company==""] <- NA
+acquisitions$ParentCompany[acquisitions$ParentCompany==""] <- NA
+acquisitions$AcquisitionMonth[acquisitions$AcquisitionMonth=="Feburary"] <- "February"
+acquisitions$AcquisitionMonth[acquisitions$AcquisitionMonth==""] <- NA
+acquisitions$AcquisitionID <- as.character(acquisitions$AcquisitionID)
+acquisitions$Date <- as.Date(paste(acquisitions$AcquisitionMonth,
+                                   acquisitions$AcquisitionMonthDate,
+                                   acquisitions$AcquisitionYear), 
+                             format="%B %d %y")
+acquisitions$AcquisitionMonthDate <- as.factor(acquisitions$AcquisitionMonthDate)
+acquisitions$AcquisitionMonth <- factor(acquisitions$AcquisitionMonth, levels=month.name)
+acquisitions$AcquisitionYear <- as.integer(acquisitions$AcquisitionYear)
+company_colors <- c("white", "#3b5998", "#0F9D58", 
+                    "#1f70c1", "#f65314", "#38A1F3", "#720e9e")
+names(company_colors) <- c("Apple", "Facebook", "Google", 
+                           "IBM", "Microsoft", "Twitter", "Yahoo")
+summary(acquisitions)
+head(acquisitions)
+```
+
+
+#Introduction
+Mergers and acquisitions (M&A) is a general term that refers to the consolidation of companies or assets through various types of financial transactions. M&A can include a number of different transactions, such as mergers, acquisitions, consolidations, tender offers, purchase of assets and management acquisitions. In all cases, two companies are involved, a seller (the company being acquired) and a buyer (the acquirer). Primary motives for M&A include revenue growth, deeper market reach, leveraging technology, consolidation of costs & expenses, stabilizing financials, expand customer base, expand talent, and defensive positioning. M&A dates far beyond the 19th century, but is generally regarded as an activity or practice arising out the age of industrialization (~1893). 
+
+This dataset describes mergers and acquisitions by large American tech companies (Apple, Facebook, Google, IBM, Microsoft, Twitter, and Yahoo) between the years 1987 and 2018. In this time period, analysts have identified three key phases of M&A activity. 1989-1999 saw an overwhelming sum of cross-border M&A and mega mergers (think Exxon Mobil). 2000-2010 was an era of globalization, shareholder activism, private equity (i.e. the rise of Blackstone), and leveraged buy-outs (LBOs). 2011 up to today is best described as a time of diverse, generic M&A activity that runs the gamut of horizontal mergers (mergers of companies in the same industry, with similar product lines, with similar customer bases), market resource producer acquisitions, and more. With the recent acceleration of technology, many M&A transactions are substantiated on acquiring thoughts, methodologies, intellectual property, relationships, and people. In fact, this phase has popularized the term "acqui-hiring", acquisitions for the purpose of acquiring human capital. Microsoft, Google, and Yahoo! have heavily employeed "this"acui-hiring", having identified more strategic efficiency than traditional recruiting. The 2010-2018 trend of acquisitions for patents, licenses, market share, name brand, research staff, methods, customer base, and culture will most likely persist for decades as Fortune companies continue trying to keep up with rapid technological change.
+
+With that, this case study will probe the tech space to better understand what trends identify these waves and why.
+
+```{r}
+acquisitions_pc <- acquisitions[is.na(acquisitions$ParentCompany)==FALSE,]
+                              
+ggplot(acquisitions_pc, 
+       aes(x=(acquisitions_pc$ParentCompany), 
+           fill=acquisitions_pc$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Parent Company") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Parent Company (1987 to current)")+ 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors)
+```
+
+
+
+#Overview
+
+##Geographical Distribution
+
+###How are acquisitions from these American tech companies distributed geographically, and what insight can this provide into M&A strategies?
+
+Hypothesis - a majority of tech sellers originate in the US where a healthy startup ecosystem has produced innovation that can furnish established, large firms with top-of-the-line technology.
+```{r}
+coor <- as.data.frame(acquisitions$Country)
+colnames(coor) <- "IOC"
+str(coor)
+coor$ISO3c <- countrycode(coor$IOC, 'genc3c', 'iso3c')
+#coor[is.na(coor$ISO3c),]
+coor$ISO3c[coor$IOC=="SWI"] <- "CHE"
+coor$ISO3c[coor$IOC=="GER"] <- "DEU"
+coor$ISO3c[coor$IOC=="DEN"] <- "DNK"
+coor$ISO3c[coor$IOC=="POR"] <- "PRT"
+coor$ISO3c[coor$IOC=="GRE"] <- "GRC"
+coor$ISO3c[coor$IOC=="NED"] <- "NLD"
+coor$ISO3c[coor$IOC=="EU"] <- NA
+coor$ISO3c[coor$IOC=="UK"] <- "GBR"
+coor$ISO3c[coor$IOC=="SUI"] <- "CHE"
+acquisitions$CountryName <- countrycode(coor$ISO3c, 'iso3c', 'country.name')
+coor$CountryName <- countrycode(coor$ISO3c, 'iso3c', 'country.name')
+coor <- transform(coor, count = table(coor$ISO3c)[coor$ISO3c])
+#interestingly, this data set uses international olympic committee geographic codes (IOC-3)
+
+uniq_coor <- unique(coor) 
+sPDF <- joinCountryData2Map(uniq_coor
+         ,joinCode = "ISO3"
+         ,nameJoinColumn = "ISO3c")
+```
+
+```{r, include=TRUE}
+mapDevice() #create world map shaped window
+png("~/Downloads/TEST.png", width=600, height=600)
+mapBubbles(sPDF 
+  #a spatial polygon data frame transformed from the data set
+  ,nameZSize="count.Freq"
+  ,nameZColour="black"
+  ,colourPalette="rainbow"
+  ,oceanCol="lightblue"
+  ,landCol="white")
+dev.off()
+```
+![Global Visualization of M&A Activity For Selected Companies](~/Downloads/TEST.png)
+
+```{r}
+filter_out_USA <- filter(acquisitions, 
+                         acquisitions$CountryName!="United States", 
+                         is.na(acquisitions$CountryName)==FALSE)
+
+ggplot(filter_out_USA, aes(x=filter_out_USA$CountryName)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab(NULL) + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (excl. US)") + 
+  geom_histogram(stat="count", color="black", fill="white") 
+```
+
+On aggregate, most tech M&A sellers originate from the US, as predicted (refer to Figure 1 below). Europe and Canada also have a fairly healthy startup ecosystem, as well, which would explain the semi-significant number of sellers originating from those regions. Israel should also receive respectable mention for its number of sellers; its transformation into a "startup nation" is conceived by some as an "economic miracle". In terms of insights, this indicates to market players where they should expect to see continuing tech M&A activity and where investment banks can focus their attention to find tech sellers. 
+
+Keep in mind, though, that the selected M&A buyers in this study are all American companies, so this data may not be globally applicable; the selected M&A buyers may be focused on finding M&A sellers located in the US. But, our position is that this trend is powered by a supply-side dynamic rather than the demand-side. If Australia was the hotspot for technological innovation, everyone knew they had the best startups, and M&A buyers experienced enormous success with Australian M&A, M&A buyers like the selected companies would look to Australia. But, as is apparent, this is simply not the case. Therefore, the findings from this data can be justifiably extrapolated to global tech M&A activity.
+
+To further analyze, we will break geographical distribution down by the 3 previously discussed phases. 
+
+
+###Deeper Analysis - 3 Phases: 1987-today
+####Phase 1 - Cross-border M&A and Mega Mergers
+```{r}
+acquisitions_phase_one <- filter(acquisitions, 
+                                 acquisitions$AcquisitionYear<2000,
+                                 is.na(acquisitions$CountryName)==FALSE)
+```
+
+```{r, include=TRUE}
+ggplot(acquisitions_phase_one,
+       aes(x=acquisitions_phase_one$CountryName,
+           fill=acquisitions_phase_one$ParentCompany)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (1987-1999)") + 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  scale_y_continuous(breaks=seq(0,60,10), limit=c(0,60))
+```
+
+```{r, include=FALSE}
+ggplot(acquisitions_phase_one, 
+       aes(x=acquisitions_phase_one$CountryName, 
+           fill=acquisitions_phase_one$ParentCompany,
+           color=acquisitions_phase_one$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (2000-2010)") + 
+  geom_point(stat="count", size=5) +
+  geom_point(stat="count", shape=1, size=5, color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  scale_color_manual(name=NULL, values=company_colors) +
+  scale_y_continuous(trans="sqrt")
+```
+Apart from IBM, the selected companies were still only small to medium-sized in this phase, so it make sense that cross-border M&A was not a defining strategy. Microsoft's revenue was still under 20 BN USD and Apple's under 7 BN USD. And with IBM, this was a period of near disaster for the company (several years they reported billion-dollar losses), which explains its complete lack of M&A activity. Regardless, this data supports the claim that most tech M&A sellers originate from the US.
+
+####Phase 2 - Globalization, Activism, PE, and LBOs
+```{r}
+acquisitions_phase_two <- filter(acquisitions, 
+                                 acquisitions$AcquisitionYear>=2000,
+                                 acquisitions$AcquisitionYear<=2010,
+                                 is.na(acquisitions$CountryName)==FALSE)
+```
+
+```{r, include=TRUE}
+ggplot(acquisitions_phase_two, 
+       aes(x=acquisitions_phase_two$CountryName, 
+           fill=acquisitions_phase_two$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (2000-2010)") + 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors)
+```
+
+```{r, include=FALSE}
+ggplot(acquisitions_phase_two, 
+       aes(x=acquisitions_phase_two$CountryName, 
+           fill=acquisitions_phase_two$ParentCompany,
+           color=acquisitions_phase_two$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (2000-2010)") + 
+  geom_point(stat="count", size=3) +
+  geom_point(stat="count", shape=1, size=3, color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  scale_color_manual(name=NULL, values=company_colors) +
+  scale_y_continuous(trans="sqrt")
+```
+In this phase, the selected companies had grown significantly, raking in billions of dollars in revenues. Despite this, their cross-border M&A activity remained insignificant. US remained center-stage in terms of where M&A transactions took place. Even Canada, the trailing leader, only held 25 candles to the ~275 of the US. The number of M&A sellers from the US accounted for more than 80% of all transactions in this period. Thus, this data continues to support the claim that most tech M&A sellers originate from the US.   
+
+####Phase 3 - Generic Activity
+```{r}
+acquisitions_phase_three <- filter(acquisitions, 
+                                   acquisitions$AcquisitionYear>2010,
+                                   is.na(acquisitions$CountryName)==FALSE)
+```
+
+```{r, include=TRUE}
+ggplot(acquisitions_phase_three, 
+       aes(x=acquisitions_phase_three$CountryName,
+           fill=acquisitions_phase_three$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (2011-current)")+ 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors)
+```
+
+```{r, include=FALSE}
+ggplot(acquisitions_phase_three, 
+       aes(x=acquisitions_phase_three$CountryName,
+           fill=acquisitions_phase_three$ParentCompany,
+           color=acquisitions_phase_three$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Country") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Country (2011-today)") + 
+  geom_point(stat="count", size=3) +
+  geom_point(stat="count", shape=1, size=3, color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  scale_color_manual(name=NULL, values=company_colors) +
+  scale_y_continuous(trans="sqrt")
+```
+The close of this phase with a clear trend towards US M&A is strong evidence that most tech M&A sellers originate from the US. As such, this substantiates the recommendation that investment banks and corporate development teams focus their attention on the US to find valuable tech sellers for M&A transactions. Additionally, investors and the public should expect to see many tech M&A sellers in the coming decades. 
+
+##Timing Distribution
+
+
+###Are there certain years where there is more M&A activity? Why?
+
+```{r}
+bfo2018 <- filter(acquisitions, acquisitions$AcquisitionYear<2018)
+ggplot(bfo2018, 
+       aes(x=as.factor(bfo2018$AcquisitionYear), 
+           #2018 contains impartial data, so it has been excluded
+           fill=bfo2018$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Year") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Year")+ 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors)
+```
+Generally, M&A activity has escalated significantly since 2000. Keep in mind, though, that these acquirers were still very young at 2000 so this visualization does not fully illustrate this market-wide trend. Nonetheless, this visualization does illustrate the 2008/2009 dip, 2014 peak, and subsequent decline for tech M&A activity. The 2008/2009 dip in M&A activity was a consequence of the 2008 depression. The collapse of the real estate bubble quickly spurred a contractionary world economy which coerced more conservative corporate investment and a loss of corporate (and investor) confidence. Fragmented investor sentiment towards tech companies made it difficult to raise capital, particularly with equity financing, to fund M&A. This direct relationship between economic performance and M&A activity is well-known to investment banks, so we won't go further into detail here. Notably, this highly correlated relationship is one of the many reasons it is important for investment banks to monitor market activity & market stability. The 2009-2014 boom for tech M&A was, in short, caused by the growing availability of credit & capital as market uncertainty subsided coupled with a burst in private-sector innovation. What is more interesting is the recent decline in activity from 2014 to today, a trend requiring further research.
+
+Regarding this decline, our hypothesis is that this decline is defined by poor investor sentiment with the apprehension of the next bear market & economic downturn. More concisely, it is a consequence of economic uncertainty. It could also, potentially, be the cost of capital. Or, is it low availability of credit, changes in government policy, and slowing private-sector innovation? Obviously, this item requires further research.
+
+###Are there certain months where there is more M&A activity? Why?
+
+Hypothesis - M&A activity is slower during the holidays due to the complexity of coordinating across schedules.
+
+```{r}
+acquisitions_month <- filter(acquisitions, is.na(acquisitions$AcquisitionMonth)==FALSE)
+avg_month <- mean(count(acquisitions_month, acquisitions_month$AcquisitionMonth)$n)
+
+ggplot(acquisitions_month, 
+       aes(x=(acquisitions_month$AcquisitionMonth), 
+           fill=acquisitions_month$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Month") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Month")+ 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  scale_y_continuous(breaks=seq(0,100,10), limits=c(0,90)) +
+  geom_hline(color="red", yintercept=mean(avg_month))
+```
+
+Tech M&A numbers are down in the holiday season as expected (November and December) as well as February. After thorough research, we still have no explanation for the average slow down in February, and this represents something that can be explored further. Generally, this data suggests that M&A players should lower expectations for closing deals in the winter. Further, this data is a reminder that there is no excuse to lower expectations for deal closure in summer--bankers, you still have to keep busy in the summer.
+
+###Are there certain times of the month where there is more M&A activity? Why?
+
+Hypothesis - most M&A activity is weighted heavily to the beginning of the month to facilitate smooth transitions.
+
+```{r}
+acquisitions_day <- filter(acquisitions, is.na(acquisitions$AcquisitionMonthDate)==FALSE)
+avg_day <- mean(count(acquisitions_day, acquisitions_day$AcquisitionMonthDate)$n)
+
+ggplot(acquisitions_day, 
+       aes(x=(acquisitions_day$AcquisitionMonthDate), 
+           fill=acquisitions_day$ParentCompany)) + 
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5)) + 
+  xlab("Day of the Month") + ylab("Number of Acquisitions") + 
+  labs(title="Acquisition Distribution by Day")+ 
+  geom_bar(stat="count", color="black") +
+  scale_fill_manual(name=NULL, values=company_colors) +
+  geom_hline(color="red", yintercept=mean(avg_day))
+```
+
+Surprisingly, M&A deal closure is relatively spread out throughout the month, but there is some noticeable weighting of M&A events to the beginning of the month, and similarly, a lightening of activity towards the end of the month as corporations decide to delay to the beginning of the following month. As such, there may be validity in advising companies to plan M&A for the beginning of a month.
+
+##M&A and Derived Products
+
+###Which products/product lines are these parent companies using M&A strategies most heavily for? Why?
+
+Hypothesis - These tech companies predominantly derive products that are directly integrated in their main products, their money-making products or services (i.e. Yahoo Search for Yahoo, Google Search for Google, etc.).
+
+For this analysis, we will break down derived products for each company.
+"Apple", "Facebook", "Google", "IBM", "Microsoft", "Twitter", "Yahoo"  
+
+####APPLE
+```{r}
+acquisitions_dp_apple <- filter(acquisitions,
+                        acquisitions$ParentCompany=="Apple",
+                        is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Apple M&A transactions with derived products
+acquisitions_dp_apple <- separate_rows(acquisitions_dp_apple, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_apple$Derived.products <- sub("\\[.*", '',
+                                              acquisitions_dp_apple$Derived.products)
+acquisitions_dp_apple$Derived.products <- trimws(acquisitions_dp_apple$Derived.products)
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products=="ARKit"] <-
+  "ARkit"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products=="CoreML"] <-
+  "Core ML"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products==
+                                         "Mac OS X"] <- "macOS"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products==
+                                         "TV App for Apple TV and iOS"] <- "TV App"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products==
+                                         "iTunes Match"] <- "iTunes"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products==
+                                         "iTunes Store"] <- "iTunes"
+acquisitions_dp_apple$Derived.products[acquisitions_dp_apple$Derived.products==
+                                         "iOS Keyboard"] <- "iOS"
+#cleaning results
+acquisitions_dp_apple_cnt<- count(acquisitions_dp_apple, 
+                                    acquisitions_dp_apple$Derived.products)
+names(acquisitions_dp_apple_cnt) <- c("Derived.products", "n")
+acquisitions_dp_apple_cnt <- filter(acquisitions_dp_apple_cnt,
+                                    acquisitions_dp_apple_cnt$n>1)
+  
+ggplot(acquisitions_dp_apple_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_apple_cnt$Derived.products,
+                   -acquisitions_dp_apple_cnt$n), 
+         y=acquisitions_dp_apple_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Product") + ylab("Number of Acquisitions") +
+  labs(title="Apple M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black") +
+  scale_y_continuous(breaks=seq(0,10,2))
+```
+While we expected M&A activity for Apple to primarily involve hardware products, we we're surprised to find that most M&A activity was actually driven by software development, particularly mobile software.  
+
+Demand for the iPhone has skyrocketed in the past decade, and now the product line makes up more than 50% of Apple's revenues. Logically, it is in Apple's best interest to furnish iPhone consumers with the highest quality software to sustain and drive continued growth. This seems to look like providing complementary services (horizontal expansion; new products) that increase value for consumers.  
+
+```{r}
+apple_maps <- acquisitions_dp_apple[acquisitions_dp_apple$Derived.products=="Apple Maps",]
+ggplot(apple_maps,
+       aes(x=apple_maps$AcquisitionYear)) +
+  geom_bar(stat="count", fill="white", color="black") +
+  labs(title="Acquisitions for Apple Maps by Year") +
+  ylab("Number of Acquisitions") +
+  xlab("Year") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(breaks=seq(2008, 2016, 1))
+```
+
+Apple Maps was falling behind competition so it makes sense, just as with other complimentary software products, that Apple would pickup M&A activity to spur more technological advancement to compete with other brands (Google and Samsung). What insight does this provide? Strategically, firms may be looking to leverage innovation in the back end to support and bolster core product lines where they focus and have had demonstrated success with their efforts. Additionally, with Apple we see more horizontal M&A which may be a more profitable method for seeking innovation and providing support to core products in the tech industry.
+
+####FACEBOOK
+```{r}
+acquisitions_dp_fb <- filter(acquisitions,
+                        acquisitions$ParentCompany=="Facebook",
+                        is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Facebook M&A transactions with derived products
+acquisitions_dp_fb <- separate_rows(acquisitions_dp_fb, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_fb$Derived.products <- sub("\\[.*", '',
+                                              acquisitions_dp_fb$Derived.products)
+acquisitions_dp_fb$Derived.products <- trimws(acquisitions_dp_fb$Derived.products)
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products=="Mobile"] <-
+  "Facebook Mobile"
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products==  
+                                      "Mobile engineering team"] <- "Facebook Mobile"
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products=="Messenger"] <-
+  "Facebook Messenger"
+#cleaning results
+acquisitions_dp_fb_cnt<- count(acquisitions_dp_fb, 
+                                    acquisitions_dp_fb$Derived.products)
+names(acquisitions_dp_fb_cnt) <- c("Derived.products", "n")
+
+ggplot(acquisitions_dp_fb_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_fb_cnt$Derived.products,
+                   -acquisitions_dp_fb_cnt$n), 
+         y=acquisitions_dp_fb_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Product") + ylab("Number of Acquisitions") +
+  labs(title="Facebook M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black") +
+  scale_y_continuous(breaks=seq(0,10,2))
+```
+Facebook's M&A activity provides much deeper insight into M&A strategy considering the more lucrative transactions (court settlement, domain change, and acqui-hires). This points to unique ways M&A can be leveraged to resolve conflict and spur growth. Aside from that, the activity with mobile applications suggests that Facebook needed to source cutting-edge technology in similar fashion to Apple. Notably, this data continues to suggest that horizontal M&A (adding complementary products/services) may be the most profitable M&A strategy in the tech space.
+
+####GOOGLE
+```{r}
+acquisitions_dp_google <- filter(acquisitions,
+                        acquisitions$ParentCompany=="Google",
+                        is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Google M&A transactions with derived products
+acquisitions_dp_google <- separate_rows(acquisitions_dp_google, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_google$Derived.products <- sub("\\[.*", '',
+                                              acquisitions_dp_google$Derived.products)
+acquisitions_dp_google$Derived.products <- trimws(acquisitions_dp_google$Derived.products)
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Adsense"] <- "AdSense"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Android for Work"] <- "Android"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Android TV"] <- "Android"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Android Pay"] <- "Android"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Android Wear"] <- "Android"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google Analytics Adsense"] <- "Google Analytics"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google Cloud"] <- "Google Cloud Platform"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google Play Books"] <- "Google Play"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google Play Music"] <- "Google Play"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google Books"] <- "Google Play"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "Google+ Google Analytics"] <- "Google Analytics"
+acquisitions_dp_google$Derived.products[acquisitions_dp_google$Derived.products==
+                                          "YouTube for Kids"] <- "YouTube"
+#cleaning results
+acquisitions_dp_google_cnt<- count(acquisitions_dp_google, 
+                                    acquisitions_dp_google$Derived.products)
+names(acquisitions_dp_google_cnt) <- c("Derived.products", "n")
+acquisitions_dp_google_cnt <- filter(acquisitions_dp_google_cnt,
+                                    acquisitions_dp_google_cnt$n>1)
+  
+ggplot(acquisitions_dp_google_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_google_cnt$Derived.products,
+                   -acquisitions_dp_google_cnt$n), 
+         y=acquisitions_dp_google_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Product") + ylab("Number of Acquisitions") +
+  labs(title="Google M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black") +
+  scale_y_continuous(breaks=seq(0,35,5))
+```
+This visualization on Google M&A Activity starts to paint a more defining picture of M&A strategy in the tech space. Not only does it support our findings that effective M&A in tech is driven by innovation-seeking and horizontal expansion (adding complementary products/services), but it also shows that a focus on mobile M&A is popular in the tech industry. This is consistent with the "mobile first" trend seen in the tech space.
+
+####IBM
+```{r}
+acquisitions_dp_fb <- filter(acquisitions,
+                             acquisitions$ParentCompany=="Facebook",
+                             is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Facebook M&A transactions with derived products
+acquisitions_dp_fb <- separate_rows(acquisitions_dp_fb, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_fb$Derived.products <- sub("\\[.*", '',
+                                           acquisitions_dp_fb$Derived.products)
+acquisitions_dp_fb$Derived.products <- trimws(acquisitions_dp_fb$Derived.products)
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products=="Mobile"] <-
+  "Facebook Mobile"
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products=="Mobile engineering team"] <-
+  "Facebook Mobile"
+acquisitions_dp_fb$Derived.products[acquisitions_dp_fb$Derived.products=="Messenger"] <-
+  "Facebook Messenger"
+#cleaning results
+acquisitions_dp_fb_cnt<- count(acquisitions_dp_fb, 
+                               acquisitions_dp_fb$Derived.products)
+names(acquisitions_dp_fb_cnt) <- c("Derived.products", "n")
+
+ggplot(acquisitions_dp_fb_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_fb_cnt$Derived.products,
+                   -acquisitions_dp_fb_cnt$n), 
+         y=acquisitions_dp_fb_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Products") + ylab("Number of Acquisitions") +
+  labs(title="Facebook M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black") +
+  scale_y_continuous(breaks=seq(0,10,2))
+```
+
+####MICROSOFT
+In this dataset, there are no derived products recorded for M&A activity with Microsoft.
+
+####TWITTER
+```{r}
+acquisitions_dp_twitter <- filter(acquisitions,
+                             acquisitions$ParentCompany=="Twitter",
+                             is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Facebook M&A transactions with derived products
+acquisitions_dp_twitter <- separate_rows(acquisitions_dp_twitter, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_twitter$Derived.products <- sub("\\[.*", '',
+                                           acquisitions_dp_twitter$Derived.products)
+acquisitions_dp_twitter$Derived.products <- trimws(acquisitions_dp_twitter$Derived.products)
+#acquisitions_dp_twitter$Derived.products[acquisitions_dp_twitter$Derived.products==
+ #                                          ""] <- ""
+
+#cleaning results
+acquisitions_dp_twitter_cnt <- count(acquisitions_dp_twitter, 
+                               acquisitions_dp_twitter$Derived.products)
+names(acquisitions_dp_twitter_cnt) <- c("Derived.products", "n")
+
+ggplot(acquisitions_dp_twitter_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_twitter_cnt$Derived.products,
+                   -acquisitions_dp_twitter_cnt$n), 
+         y=acquisitions_dp_twitter_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Products") + ylab("Number of Acquisitions") +
+  labs(title="Twitter M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black") +
+  scale_y_continuous(breaks=seq(0,10,2))
+```
+Twitter's M&A activity is very limited and strategically they don't focus on horizontal M&A. Rather, Twitter uses vertical M&A to enhance their core product(s) and control more levels of the pipeline. For example, MoPub provides monetization solutions to software developers. When applied to Twitter, Twitter no longer needs to use third-party monetization or marketing products to profit from their advertisers. Similarly, the M&A with Twitter Cortex (ML software) and Analytics eliminates or at least reduces the need to rely on other analytics software and provides more value to advertisers. The remaining M&A transactions clearly illustrate a focus on enhancing the core Twitter offering. This provides insight into how vertical M&A can reduce costs and provide enhanced value to customers & clients.
+
+####YAHOO!
+```{r}
+acquisitions_dp_yahoo <- filter(acquisitions,
+                             acquisitions$ParentCompany=="Yahoo",
+                             is.na(acquisitions$Derived.products)==FALSE)
+#filtering data for Facebook M&A transactions with derived products
+acquisitions_dp_yahoo <- separate_rows(acquisitions_dp_yahoo, Derived.products, sep=",")
+#seperating derived products into different rows
+acquisitions_dp_yahoo$Derived.products <- sub("\\[.*", '',
+                                           acquisitions_dp_yahoo$Derived.products)
+acquisitions_dp_yahoo$Derived.products <- trimws(acquisitions_dp_yahoo$Derived.products)
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo! Search Marketing"] <- "Yahoo! Search"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo! Music Radio (defunct)"] <- "Yahoo! Music"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo Music"] <- "Yahoo! Music"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo App"] <- "Yahoo! Mobile"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo Calendar"] <- "Yahoo! Calendar"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Mobile Properties and Apps"] <- "Yahoo! Mobile"
+acquisitions_dp_yahoo$Derived.products[acquisitions_dp_yahoo$Derived.products==
+                                         "Yahoo Search"] <- "Yahoo! Search"
+
+#cleaning results
+acquisitions_dp_yahoo_cnt<- count(acquisitions_dp_yahoo, 
+                               acquisitions_dp_yahoo$Derived.products)
+acquisitions_dp_yahoo_cnt
+names(acquisitions_dp_yahoo_cnt) <- c("Derived.products", "n")
+
+ggplot(acquisitions_dp_yahoo_cnt, 
+       aes(
+         x=reorder(acquisitions_dp_yahoo_cnt$Derived.products,
+                   -acquisitions_dp_yahoo_cnt$n), 
+         y=acquisitions_dp_yahoo_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Derived Products") + ylab("Number of Acquisitions") +
+  labs(title="Yahoo M&A - Derived Products") + 
+  geom_bar(stat='identity', fill="white", color="black")
+
+```
+Like Twitter, with Yahoo! we see a strong focus on utilizing M&A to grow core products. For Yahoo!, this means Yahoo! Search and Yahoo! Mail, and subsequent apps--almost all Yahoo! revenue comes from advertising on Yahoo! Search and Yahoo! Mail. But, with less similarity to Twitter and more similarity to Google, Facebook, and Apple, Yahoo! leverages horizontal M&A to grow product offerings. We see extensions into games, social media, music, shopping, video & TV, web development software, and much more. This reminds us that M&A angled at the core product is popular (and allegedly successful), but horizontal M&A is much more defining for the tech space. 
+
+##M&A Business Categories
+
+###What business categories are these tech companies pulling from and why? Are there more horizontal or vertical mergers & acquisitions?
+
+Hypothesis - horizontal M&A is more popular among these tech companies as they eliminate competitors, grow their customer base, and seek cutting-edge innovation in their respective fields. As such, software M&A is most significant.
+```{r, echo=FALSE}
+acquisitions_categories <- filter(acquisitions, is.na(acquisitions$Business)==FALSE)
+
+#filtering data for M&A transactions with business category data
+acquisitions_categories <- separate_rows(acquisitions_categories, Business, sep=",")
+#seperating derived products into different rows
+acquisitions_categories$Business <- sub("\\[.*", '',
+                                              acquisitions_categories$Business)
+acquisitions_categories$Business <- trimws(acquisitions_categories$Business)
+#trim out white spaces and other filler characters
+
+acquisitions_categories$Business[
+  grep("loud", acquisitions_categories$Business)] <- "Cloud"
+acquisitions_categories$Business[
+  grep("pplications", acquisitions_categories$Business)] <- "Mobile Apps"
+acquisitions_categories$Business[
+  grep("app", acquisitions_categories$Business)] <- "Mobile Apps"
+acquisitions_categories$Business[
+  grep("App", acquisitions_categories$Business)] <- "Mobile Apps"
+acquisitions_categories$Business[
+  grep("nalytics", acquisitions_categories$Business)] <- "Analytics"
+acquisitions_categories$Business[
+  grep("nalysis", acquisitions_categories$Business)] <- "Analytics"
+acquisitions_categories$Business[
+  grep("dvertising", acquisitions_categories$Business)] <- "Advertising"
+acquisitions_categories$Business[
+  grep("reality", acquisitions_categories$Business)] <- "AR/VR"
+acquisitions_categories$Business[
+  grep("AR", acquisitions_categories$Business)] <- "AR/VR"
+acquisitions_categories$Business[
+  grep("VR", acquisitions_categories$Business)] <- "AR/VR"
+acquisitions_categories$Business[
+  grep("Vision", acquisitions_categories$Business)] <- "Computer Vision"
+acquisitions_categories$Business[
+  grep("vision", acquisitions_categories$Business)] <- "Computer Vision"
+acquisitions_categories$Business[
+  grep("ecurity", acquisitions_categories$Business)] <- "Security"
+acquisitions_categories$Business[
+  grep("anti", acquisitions_categories$Business)] <- "Security"
+acquisitions_categories$Business[
+  grep("Anti", acquisitions_categories$Business)] <- "Security"
+acquisitions_categories$Business[
+  grep("ecure", acquisitions_categories$Business)] <- "Security"
+acquisitions_categories$Business[
+  grep("ideo", acquisitions_categories$Business)] <- "Video"
+acquisitions_categories$Business[
+  grep("arketing", acquisitions_categories$Business)] <- "Marketing"
+acquisitions_categories$Business[
+  grep("mail", acquisitions_categories$Business)] <- "Email"
+acquisitions_categories$Business[
+  grep("nterprise", acquisitions_categories$Business)] <- "Enterprise"
+acquisitions_categories$Business[
+  grep("AI", acquisitions_categories$Business)] <- "Machine Learning"
+acquisitions_categories$Business[
+  grep("earning", acquisitions_categories$Business)] <- "Machine Learning"
+acquisitions_categories$Business[
+  grep("eural", acquisitions_categories$Business)] <- "Machine Learning"
+acquisitions_categories$Business[
+  grep("rtificial", acquisitions_categories$Business)] <- "Machine Learning"
+acquisitions_categories$Business[
+  grep("3D", acquisitions_categories$Business)] <- "3D"
+acquisitions_categories$Business[
+  grep("3-D", acquisitions_categories$Business)] <- "3D"
+acquisitions_categories$Business[
+  grep("map", acquisitions_categories$Business)] <- "Maps"
+acquisitions_categories$Business[
+  grep("Map", acquisitions_categories$Business)] <- "Maps"
+acquisitions_categories$Business[
+  grep("essaging", acquisitions_categories$Business)] <- "Messaging"
+acquisitions_categories$Business[
+  grep("obile", acquisitions_categories$Business)] <- "Mobile Apps"
+acquisitions_categories$Business[
+  grep("earch", acquisitions_categories$Business)] <- "Search"
+acquisitions_categories$Business[
+  grep("ocial", acquisitions_categories$Business)] <- "Social Media"
+acquisitions_categories$Business[
+  grep("udio", acquisitions_categories$Business)] <- "Audio"
+acquisitions_categories$Business[
+  grep("hoto", acquisitions_categories$Business)] <- "Photography"
+acquisitions_categories$Business[
+  grep("usiness", acquisitions_categories$Business)] <- "Business Management"
+acquisitions_categories$Business[
+  grep("ontent", acquisitions_categories$Business)] <- "Content Management"
+acquisitions_categories$Business[
+  grep("ommerce", acquisitions_categories$Business)] <- "E-Commerce"
+acquisitions_categories$Business[
+  grep("mag", acquisitions_categories$Business)] <- "Image Management"
+acquisitions_categories$Business[
+  grep("anguage", acquisitions_categories$Business)] <- "Language Processing"
+acquisitions_categories$Business[
+  grep("obotic", acquisitions_categories$Business)] <- "Robotics"
+acquisitions_categories$Business[
+  grep("eech", acquisitions_categories$Business)] <- "Speech Technology"
+acquisitions_categories$Business[
+  grep("oice", acquisitions_categories$Business)] <- "VoIP"
+acquisitions_categories$Business[
+  grep("ravel", acquisitions_categories$Business)] <- "Travel Management"
+acquisitions_categories$Business[
+  grep("ireless", acquisitions_categories$Business)] <- "Wireless Technology"
+acquisitions_categories$Business[
+  grep("usic", acquisitions_categories$Business)] <- "Music"
+acquisitions_categories$Business[
+  grep("oftware", acquisitions_categories$Business)] <- "Software"
+#cleaning results
+```
+
+```{r, echo=FALSE}
+acquisitions_categories_cnt<- count(acquisitions_categories, 
+                                    acquisitions_categories$Business)
+names(acquisitions_categories_cnt) <- c("Business", "n")
+acquisitions_categories_cnt <- filter(acquisitions_categories_cnt,
+                                    acquisitions_categories_cnt$n>2)
+
+ggplot(acquisitions_categories_cnt, 
+       aes(
+         x=reorder(acquisitions_categories_cnt$Business,
+                   -acquisitions_categories_cnt$n), 
+         y=acquisitions_categories_cnt$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Business Category") + ylab("Number of Acquisitions") +
+  labs(title="Acquisitions Distribution by Business/Industry") + 
+  geom_bar(stat='identity', fill="white", color="black")
+#Many of the other categories entail "software" so the general "software" isn't helpful in a thorough analysis. We will sort it out.
+```
+
+```{r}
+acquisitions_categories_cnt_nosoft <- filter(acquisitions_categories_cnt,
+                                    acquisitions_categories_cnt$Business!="Software")
+
+ggplot(acquisitions_categories_cnt_nosoft, 
+       aes(
+         x=reorder(acquisitions_categories_cnt_nosoft$Business,
+                   -acquisitions_categories_cnt_nosoft$n), 
+         y=acquisitions_categories_cnt_nosoft$n)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Business Category") + ylab("Number of Acquisitions") +
+  labs(title="Acquisitions Distribution by Business/Industry") + 
+  geom_bar(stat='identity', fill="white", color="black")
+```
+With some data manipulation, observe the results of a visualization taking business categories of M&A sellers and Number of Transactions. Note the number of acquisitions for mobile apps, social media, security, cloud, and machine learning. These business categories have seen unrelenting degrees of technological innovation and disruption. Additionally, these are relatively low-barrier business categories, meaning it is relatively easy for startups to penetrate them. That said, the quantity of M&A transactions involving these specific categories is telling. It indicates a major incentive for M&A, as previously stated, acquiring cutting-edge technology. This data clearly supports the incentive factor "acqui-tech" M&A has for buyers. 
+
+#Conclusion
+We can conclude from our observations in this study that M&A activity in the tech space is highly motivated by acqui-hiring, acqui-tech, innovation-seeking, and enhancing core product offerings. Some of the more extraneous insights from this study include the following:  
+
+ - Most M&A transactions occur at the beginning of the month
+ - M&A activity slows down during the Winter and maintains strong momentum during the summer
+ - Tech M&A is healthiest in the US, a nod to the strong (and growing) startup sphere in America
+  - Horizontal M&A (focused on developing and increasing value of core products) is most widely used in the tech industry, a helpful tool for leveraging growth
+ - Tech M&A has been slowing down significantly since 2014
+
+With these valuable insights, companies and individuals should distribute human capital, plan, and invest accordingly. Market players should be very aware of these trends. 
+
+We did not have an opportunity to address our questions on what causes dips and hikes in M&A activity nor valuations, and this would require further, more detailed research. With valuations, this dataset simply didn't provide enough information to make valuable conclusions about valuations. More financial data would be necessary to construct models to describe and evaluate valuations. Moving forward, the most important step would be scrutinizing why M&A activiy has been slowing down since 2014. 
+
+

@@ -1,0 +1,133 @@
+---
+title: "Assignment 6"
+author: "Chase Darlington"
+date: "October 18, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#BSDS 100: Intro to Data Science with R
+##Assignment 6
+###by Chase S Darlington (University of San Francisco)
+
+#####Directions: For all questions in this assignment, write complete sentences and fully answer any question
+that is asked, and use R to answer each question. Provide all R code and solutions by knitting your final
+RStudio file into a single file named your name CA6.pdf. Late assignments will automatically have 10 points
+deducted, if submitted within a week of the due date. Assignments submitted after the answer key is posted
+will not be accepted and will receive zero points.
+
+
+1. (2 pts) What is the advantage of storing (and loading) data as a .csv file rather than a .xlsx file?
+  - .csv files are comma delimited and thus lack a strict dat structure. Consequently, .csv files are flexible. .xlsx files, on     the other hand have a defined structure and are not as readily flexible as .csv files. Therefore, .csv files are preferred     for storing and loading data because they are more flexible and easier to work with across most programming languages. 
+
+2. (6 pts) Name three different types of data sets that you may be interested in loading into R and describe
+at least one function that can be used to input each of the types of data set. (2 pts per example) 
+
+- CSV
+  - read.csv(path) can translate these data sets into data frames if the data set is in the form of a csv file. read.table() and read.csv2() can do essentially the same. Then, the data can be manipulated from there. 
+- TXT
+  - read.table(path)
+- HTML
+  - readHTMLtable(url, which="")
+  - OR use getURL() and then readHTMLtable()
+- XML
+  - xmlTreeParse(url)
+
+
+```{r}
+data <- read.csv("C:\\Users\\Chase Darlington\\Downloads\\sqllab_chase_darlington_ica_3_20180915T015124.csv", header=FALSE)
+head(data)
+```
+
+3. Answer the following questions.
+(a) (2 pts) Create a data frame that has the following four columns:
+  - Numbers: the numbers 1 through 50, where each number is repeated twice in a row. (e.g. 1
+  1 2 2 3 3 ...)
+  - Logicals: a vector of length 100 whose jth entry is TRUE if the jth entry of Numbers is even
+  and FALSE if the jth entry of Numbers is odd.
+  - Rev.Numbers: the vector Numbers but in reverse order.
+  - Weirdness: the sum of Logicals and Rev.Numbers.
+  
+```{r}
+df <- data.frame(NA, NA, NA, NA, NA)
+df <- data.frame(1:100, round(seq.int(1,50,length.out=100)), ifelse(1:100%%2==0, TRUE, FALSE), round(seq.int(50,1,length.out=100)), df[,3] + df[,4])
+colnames(df) <- c("RowNum", "Numbers", "Logicals", "Rev. Numbers", "Weirdness")
+df <- data.frame(1:100, round(seq.int(1,50,length.out=100)), ifelse(1:100%%2==0, TRUE, FALSE), round(seq.int(50,1,length.out=100)), df[,3] + df[,4])
+colnames(df) <- c("RowNum", "Numbers", "Logicals", "Rev. Numbers", "Weirdness")
+head(df)
+
+```
+(b) (2 pts) What are the data types for each of these columns?
+```{r}
+sapply(df, class)
+```
+(c) (2 pts) Describe why the variable Weirdness is an Integer variable.
+  - The logicals are interpreted as binary (False=0, True=1), and the Weirdness column is computed accordingly.
+
+(d) (2 pts) Save this data frame to any chosen directory as a .RData object named MyDataFrame.
+```{r}
+save(df, file="MyDataFrame.RDa")
+
+```
+
+(e) (2 pts) Remove the data from your workspace, then reload MyDataFrame and print out the first 6
+entries in each column of the data frame.
+```{r}
+rm(df)
+rm()
+
+load("MyDataFrame.RDa")
+head(df)
+```
+
+4. Load the Airport data that we investigated in the Input Output Lecture. Then write code to answer
+each of the following:
+```{r}
+airports <- read.csv(file = "https://raw.githubusercontent.com/abbiepopa/bsds100/master/Data/airports.csv")
+head(airports)
+summary(airports)
+```
+(a) (2 pts) What are the names of the variables in this data set and what are their data types?
+```{r}
+sapply(airports, class)
+```
+
+(b) (2 pts) What is the mean and standard deviation of the longitude of these airports?
+```{r}
+mean(airports$long)
+sd(airports$long)
+```
+(c) (2 pts) What is the minimum and maximum latitude of these airports?
+```{r}
+min(airports$lat)
+max(airports$lat)
+```
+(d) (2 pts) Which airport has the minimum latitude? The maximum latitude?
+```{r}
+airports[match(min(airports$lat), airports$lat),]
+airports[match(max(airports$lat), airports$lat),]
+```
+
+(e) (2 pts) Add a new observation (row) to this data frame. Add whatever you would like as the new
+input, but make sure that each variable maintains its original data type. (i.e. if the longitude
+variable is numeric, make sure that it remains numeric after the new observation is added).
+```{r}
+newdata <- data.frame(factor("USF"), factor("BSDS Airport"), factor("San Francisco"), factor("CA"), factor("USA"), as.double("37.7765"), as.double("122.4506"))
+colnames(newdata)<-c("iata", "airport", "city", "state", "country", "lat", "long")
+sapply(newdata, class)
+newdata
+
+newairports <- rbind(airports, newdata)
+head(newairports)
+newairports[which(newairports$iata=="USF"),]
+
+```
+(f) (2 pts) Save your new data frame as a .csv, a .txt, and a .RData file.
+
+```{r}
+save(newairports, file = "Airports.csv")
+save(newairports, file = "Airports.txt")
+save(newairports, file = "Airports.RDa")
+```
